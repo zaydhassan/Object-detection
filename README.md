@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Video Interview Proctoring System
 
-## Getting Started
+A web application to monitor candidate focus and detect unauthorized items (phone, book, notes, devices) in real-time during online video interviews. Built with React, Next.js, TensorFlow.js, and MediaPipe/COCO-SSD object detection models.
 
-First, run the development server:
+---
 
-```bash
+## Features
+
+- Live webcam video capture and recording
+- Real-time face/focus detection with alerts
+- Multi-face detection and alerting
+- Suspicious item detection (mobile phones, books, laptops)
+- Event logging with timestamps
+- Video recording download
+- Ready for backend integration for logs/reporting
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Node.js (v16 or later recommended)
+- npm (comes with Node.js)
+- Modern web browser with webcam support (Chrome, Edge preferred)
+
+### Setup
+
+1. Clone the repository:
+
+git clone "repo-url"
+
+
+2. Install dependencies:
+
+npm install
+
+
+---
+
+## Usage
+
+### Development Server
+
+Run the app locally with hot reload for development:
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- The app accesses your webcam on page load (permission required).
+- Uses TensorFlow.js BlazeFace to detect faces and check focus.
+- Uses TensorFlow.js COCO-SSD to detect phones/books/laptops.
+- Suspicious events generate alerts and are logged live.
+- The candidate video can be recorded and downloaded locally.
+- Logs can be extended to send to backend APIs.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Troubleshooting
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Camera not detected:**  
+  Ensure your webcam works in other apps and browser permissions are granted.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **No detections/events:**  
+  Confirm TensorFlow.js models load (check browser console).  
+  Test with proper lighting and clear camera view.
 
-## Deploy on Vercel
+- **Recording issues:**  
+  Confirm browser supports MediaRecorder API.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
