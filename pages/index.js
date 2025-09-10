@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import Webcam from "react-webcam";
-import * as tf from "@tensorflow/tfjs"; // IMPORT TensorFlow.js
+import * as tf from "@tensorflow/tfjs"; 
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs-backend-webgl";
@@ -19,13 +19,11 @@ export default function Home() {
   const [focusState, setFocusState] = useState({ lost: false, absent: false, multiple: false });
   const awayTimer = useRef(null);
   const absentStart = useRef(null);
+  const sessionStart = useRef(new Date());
 
-  // Webcam Ready Handler
   const handleWebcamReady = () => {
     setWebcamReady(true);
-  };
-
-  // Start candidate recording
+  }
   const handleStartRecording = () => {
     const videoEl = webcamRef.current?.video;
     if (!videoEl) { alert("Video element not ready"); return; }
@@ -33,7 +31,7 @@ export default function Home() {
     if (!(stream instanceof MediaStream)) { alert("Camera not ready"); return; }
     const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
     setMediaRecorder(recorder);
-    setRecordedChunks([]); // Reset chunks
+    setRecordedChunks([]); 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) setRecordedChunks((prev) => [...prev, e.data]);
     };
@@ -41,7 +39,6 @@ export default function Home() {
     setRecording(true);
   };
 
-  // Stop candidate recording
   const handleStopRecording = () => {
     if (mediaRecorder && recording) {
       mediaRecorder.stop();
@@ -49,7 +46,6 @@ export default function Home() {
     }
   };
 
-  // Download interview video
   const downloadRecording = () => {
     if (recordedChunks.length) {
       const blob = new Blob(recordedChunks, { type: "video/webm" });
@@ -61,15 +57,12 @@ export default function Home() {
     }
   };
 
-  // Log events
   function logEvent(type) {
     setLogs((prev) => [
       ...prev,
       { type, time: new Date().toLocaleTimeString(), candidate: CANDIDATE_NAME, session: SESSION_ID },
     ]);
   }
-
-  // Face/focus/multiple detection
   useEffect(() => {
     let faceModel, run = true, interval;
     (async () => {
@@ -110,15 +103,13 @@ export default function Home() {
       }, 1000);
     })();
     return () => { run = false; clearInterval(interval); };
-    // eslint-disable-next-line
+    
   }, [focusState.lost, focusState.absent, focusState.multiple]);
 
-  // Suspicious item detection with backend explicitly set
   useEffect(() => {
     let objModel, run = true, interval;
 
     const setupAndRun = async () => {
-      // Set backend explicitly and wait
       try {
         await tf.setBackend('webgl');
         await tf.ready();
@@ -144,8 +135,44 @@ export default function Home() {
 
     return () => { run = false; clearInterval(interval); };
   }, []);
+  const countEvents = (substr) => logs.filter(log => log.type.toLowerCase().includes(substr.toLowerCase())).length;
 
-  // Styles
+  const generateReportCSV = () => {
+    const interviewEnd = new Date();
+    const durationSec = Math.floor((interviewEnd - sessionStart.current) / 1000);
+    const durationStr = `${Math.floor(durationSec / 60)}m ${durationSec % 60}s`;
+
+    const focusLostCount = countEvents("not focused");
+    const multipleFacesCount = countEvents("multiple faces");
+    const noFaceCount = countEvents("no face");
+    const suspiciousItemsCount = countEvents("suspicious item");
+
+    const deductions = focusLostCount * 2 + multipleFacesCount * 5 + noFaceCount * 5 + suspiciousItemsCount * 5;
+    const finalScore = Math.max(0, 100 - deductions);
+
+    const rows = [
+      ["Candidate Name", CANDIDATE_NAME],
+      ["Interview Duration", durationStr],
+      ["Focus Lost Count", focusLostCount],
+      ["Multiple Faces Count", multipleFacesCount],
+      ["No Face Count", noFaceCount],
+      ["Suspicious Items Count", suspiciousItemsCount],
+      ["Final Integrity Score", finalScore],
+    ];
+
+    return rows.map(row => row.join(",")).join("\n");
+  };
+
+  const downloadReport = () => {
+    const csv = generateReportCSV();
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${SESSION_ID}_proctoring_report.csv`;
+    a.click();
+  };
+
   const cardStyle = {
     width: 340,
     background: "#fff",
@@ -195,7 +222,7 @@ export default function Home() {
             width={videoConstraints.width}
             height={videoConstraints.height}
             style={{ borderRadius: "18px", border: "4px solid #6366F1", boxShadow: "0 2px 12px #4f46e5b0" }}
-            onUserMedia={() => setWebcamReady(true)}
+            onUserMedia={handleWebcamReady}
           />
           <div style={{ textAlign: "center", fontSize: "1.15rem", color: "#3b82f6", marginTop: "1rem" }}>
             Candidate: <b>{CANDIDATE_NAME}</b>
@@ -226,9 +253,9 @@ export default function Home() {
           <div>
             {!recording &&
               <button
-                style={!webcamRef.current || recording ? buttonDisabled : buttonStyle}
+                style={!webcamReady ? buttonDisabled : buttonStyle}
                 onClick={handleStartRecording}
-                disabled={!webcamRef.current || recording}
+                disabled={!webcamReady}
               >
                 &#9679; Start Recording
               </button>
@@ -244,6 +271,13 @@ export default function Home() {
               onClick={downloadRecording}
             >
               &#128190; Download Video
+            </button>
+            <button
+              style={logs.length === 0 ? buttonDisabled : buttonStyle}
+              disabled={logs.length === 0}
+              onClick={downloadReport}
+            >
+              📄 Download Proctoring Report
             </button>
           </div>
         </div>
